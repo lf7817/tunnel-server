@@ -1,0 +1,21 @@
+[Unit]
+Description=RTK Tunnel Server - device WebSocket tunnel hub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 可执行文件：建议放 /usr/local/bin 或 /opt/rtk-tunnel-server
+ExecStart=/usr/local/bin/tunnel-server
+# 配置文件必须用绝对路径，保证任意 WorkingDirectory 下都能读到
+Environment=LISTEN_ADDR=:8081
+Environment=DEVICE_TOKENS_FILE=/etc/rtk-tunnel-server/devices.conf
+Restart=on-failure
+RestartSec=5
+
+# 可选：用专用用户运行（需先 useradd tunnel-server 并给配置/二进制读权限）
+# User=tunnel-server
+# Group=tunnel-server
+
+[Install]
+WantedBy=multi-user.target

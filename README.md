@@ -116,6 +116,8 @@ RTK002=secret-token-2
 
 配置示例、WebSocket 代理要点与多实例注意点见 [docs/WSS_AND_NGINX.md](docs/WSS_AND_NGINX.md)。
 
+**Ubuntu / systemd 部署**：可执行文件与配置文件放置路径、systemd unit 示例与步骤见 [docs/SYSTEMD_DEPLOY.md](docs/SYSTEMD_DEPLOY.md)。
+
 ---
 
 ## 如何编译
