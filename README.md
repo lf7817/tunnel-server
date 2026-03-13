@@ -16,12 +16,14 @@
 
 ## 适用场景
 
-| 场景 | 说明 |
-|------|------|
-| **远程运维** | 现场设备在 4G/NAT 后，运维人员通过中心统一入口访问设备本地 Web 配置页或 API。 |
-| **多设备分散部署** | 多台现场设备分散部署，通过隧道中心按设备 ID 访问每台设备的 Web 管理界面或状态接口。 |
-| **工控/边缘设备** | 边缘网关、工控机上的本地 HTTP 服务需要被远程访问，又不方便每台做公网映射。 |
-| **内网穿透替代** | 设备主动连出、中心反代，无需在设备侧暴露端口或部署 frp/ngrok 客户端。 |
+
+| 场景          | 说明                                              |
+| ----------- | ----------------------------------------------- |
+| **远程运维**    | 现场设备在 4G/NAT 后，运维人员通过中心统一入口访问设备本地 Web 配置页或 API。 |
+| **多设备分散部署** | 多台现场设备分散部署，通过隧道中心按设备 ID 访问每台设备的 Web 管理界面或状态接口。  |
+| **工控/边缘设备** | 边缘网关、工控机上的本地 HTTP 服务需要被远程访问，又不方便每台做公网映射。        |
+| **内网穿透替代**  | 设备主动连出、中心反代，无需在设备侧暴露端口或部署 frp/ngrok 客户端。        |
+
 
 ---
 
@@ -41,56 +43,39 @@
 使用本仓库提供的 **tunnel-server**（隧道中心）与 **tunnel-client**（隧道客户端）。可从 GitHub Release 下载对应平台二进制，或从源码编译（见「如何编译」）。以下示例假设可执行文件在当前目录。
 
 1. **启动“设备本地服务”**（模拟设备上的 `127.0.0.1:8080`）：
-
-   ```bash
+  ```bash
    python3 -m http.server 8080
-   ```
-
+  ```
 2. **启动隧道中心**（二选一）：
-
-   - **方式 A：环境变量**（适合少量设备）
-
-   ```bash
-   LISTEN_ADDR=:8081 \
-   DEVICE_TOKENS="my-device=dev-token" \
-   ./tunnel-server
-   ```
-
-   - **方式 B：配置文件**（推荐多设备；改文件保存即可，新连接按文件 mtime 自动加载，无需重启）
-
-   ```bash
-   # 新建 devices.conf，每行: device_id=token
-   echo 'my-device=dev-token' > devices.conf
-   LISTEN_ADDR=:8081 DEVICE_TOKENS_FILE=devices.conf ./tunnel-server
-   ```
-
+  - **方式 A：环境变量**（适合少量设备）
+  - **方式 B：配置文件**（推荐多设备；改文件保存即可，新连接按文件 mtime 自动加载，无需重启）
 3. **启动隧道客户端**（连接中心并转发到本地 8080）：
-
-   ```bash
+  ```bash
    SERVER_WS="ws://127.0.0.1:8081/tunnel/device" \
    DEVICE_ID=my-device \
    TOKEN=dev-token \
    TARGET_BASE="http://127.0.0.1:8080" \
    ./tunnel-client
-   ```
-
+  ```
 4. **访问**：浏览器打开 `http://127.0.0.1:8081/device/my-device/`，应看到 8080 服务的响应。
 
 更多步骤与内网 IP 访问见 [docs/LOCAL_HTTP_QUICKSTART.md](docs/LOCAL_HTTP_QUICKSTART.md)。
 
 ### 环境变量（隧道中心 `tunnel-server`）
 
-| 变量 | 默认 | 说明 |
-|------|------|------|
-| `LISTEN_ADDR` | `:8081` | 服务监听地址 |
-| `DEVICE_PREFIX` | `/device/` | 用户访问路径前缀 |
-| `TUNNEL_DEVICE_PATH` | `/tunnel/device` | WebSocket 隧道路径 |
-| `DEVICE_TOKENS_FILE` | （空） | 设备 token 文件路径；设置后设备列表从该文件加载，**忽略** `DEVICE_TOKENS` |
-| `DEVICE_TOKENS` | （空） | 设备鉴权（仅当未设置 `DEVICE_TOKENS_FILE` 时生效），格式 `id=token,id2=token2` |
-| `REQUEST_TIMEOUT` | 30s | 单次转发请求超时 |
-| `WS_PING_INTERVAL` / `WS_PONG_WAIT` | 25s / 60s | 隧道心跳 |
-| `WS_ALLOW_ALL_ORIGINS` | true | 是否允许任意 WebSocket Origin |
-| `MAX_BODY_BYTES` | 20MiB | 请求/响应 body 上限 |
+
+| 变量                                  | 默认               | 说明                                                            |
+| ----------------------------------- | ---------------- | ------------------------------------------------------------- |
+| `LISTEN_ADDR`                       | `:8081`          | 服务监听地址                                                        |
+| `DEVICE_PREFIX`                     | `/device/`       | 用户访问路径前缀                                                      |
+| `TUNNEL_DEVICE_PATH`                | `/tunnel/device` | WebSocket 隧道路径                                                |
+| `DEVICE_TOKENS_FILE`                | （空）              | 设备 token 文件路径；设置后设备列表从该文件加载，**忽略** `DEVICE_TOKENS`            |
+| `DEVICE_TOKENS`                     | （空）              | 设备鉴权（仅当未设置 `DEVICE_TOKENS_FILE` 时生效），格式 `id=token,id2=token2` |
+| `REQUEST_TIMEOUT`                   | 30s              | 单次转发请求超时                                                      |
+| `WS_PING_INTERVAL` / `WS_PONG_WAIT` | 25s / 60s        | 隧道心跳                                                          |
+| `WS_ALLOW_ALL_ORIGINS`              | true             | 是否允许任意 WebSocket Origin                                       |
+| `MAX_BODY_BYTES`                    | 20MiB            | 请求/响应 body 上限                                                 |
+
 
 **设备 token 文件格式**（`DEVICE_TOKENS_FILE`）：纯文本，每行一条 `device_id=token`，`#` 开头为注释。示例：
 
@@ -105,15 +90,17 @@ RTK002=secret-token-2
 
 ### 环境变量（隧道客户端 `tunnel-client`）
 
-| 变量 | 默认 | 说明 |
-|------|------|------|
-| `SERVER_WS` | `ws://127.0.0.1:8081/tunnel/device` | 中心 WebSocket 地址 |
-| `DEVICE_ID` | `RTK001` | 设备唯一标识 |
-| `TOKEN` | `dev-token` | 鉴权令牌，与中心配置一致 |
-| `TARGET_BASE` | `http://127.0.0.1:8080` | 本地 HTTP 服务基地址 |
-| `REQUEST_TIMEOUT` | 30s | 单次本地请求超时 |
-| `RECONNECT_INITIAL` | 1s | 断线后首次重连间隔 |
-| `RECONNECT_MAX` | 60s | 重连间隔上限 |
+
+| 变量                  | 默认                                  | 说明              |
+| ------------------- | ----------------------------------- | --------------- |
+| `SERVER_WS`         | `ws://127.0.0.1:8081/tunnel/device` | 中心 WebSocket 地址 |
+| `DEVICE_ID`         | `RTK001`                            | 设备唯一标识          |
+| `TOKEN`             | `dev-token`                         | 鉴权令牌，与中心配置一致    |
+| `TARGET_BASE`       | `http://127.0.0.1:8080`             | 本地 HTTP 服务基地址   |
+| `REQUEST_TIMEOUT`   | 30s                                 | 单次本地请求超时        |
+| `RECONNECT_INITIAL` | 1s                                  | 断线后首次重连间隔       |
+| `RECONNECT_MAX`     | 60s                                 | 重连间隔上限          |
+
 
 ### 协议与实现约定
 
@@ -189,14 +176,11 @@ go build -o bin/tunnel-client.exe ./cmd/tunnel-client
 ### 交叉编译示例
 
 - Linux 下编译 Windows 可执行文件：
-
   ```bash
   GOOS=windows GOARCH=amd64 go build -o tunnel-server.exe ./cmd/tunnel-server
   GOOS=windows GOARCH=amd64 go build -o tunnel-client.exe ./cmd/tunnel-client
   ```
-
 - Windows 下编译 Linux 可执行文件（需安装 Go 并配置好环境变量）：
-
   ```powershell
   $env:GOOS="linux"; $env:GOARCH="amd64"; go build -o tunnel-server ./cmd/tunnel-server
   $env:GOOS="linux"; $env:GOARCH="amd64"; go build -o tunnel-client ./cmd/tunnel-client
@@ -231,6 +215,41 @@ go build -o bin/tunnel-client.exe ./cmd/tunnel-client
 
 ---
 
+## 常见问题
+
+### 前端用相对路径（如 `/api/...`）时接口没走隧道
+
+- **现象**：前端请求写的是 `/api/user/detail`，浏览器会访问 `http://服务器/api/...`，没有 `/device/{device_id}` 前缀，隧道路由匹配不到。
+- **推荐做法**：在前端根据当前 URL 自动拼出 `/device/{device_id}` 前缀，然后所有 API 都基于这个前缀。
+
+示例（TypeScript）：
+
+```ts
+function getBasePrefix(): string {
+  if (typeof window === 'undefined') return '';
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  // /device/{device_id}/...
+  if (parts.length >= 2 && parts[0] === 'device') {
+    return `/device/${parts[1]}`;
+  }
+  return '';
+}
+
+export function getApiBase(): string {
+  return `${getBasePrefix()}/api`;
+}
+```
+
+然后前端里创建 HTTP 客户端时统一使用该 base：
+
+```ts
+const api = axios.create({
+  baseURL: getApiBase(),
+});
+```
+
+---
+
 ## License
 
-见仓库根目录 LICENSE 文件（如有）。
+见仓库根目录 LICENSE 文件。

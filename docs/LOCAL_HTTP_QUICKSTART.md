@@ -84,3 +84,25 @@ curl -i "http://127.0.0.1:8081/device/RTK001/"
 - 设备端没能在超时时间内返回响应
 - 检查 `TARGET_BASE` 是否可访问、`8080` 服务是否在运行
 
+### 4）前端用相对路径（如 `/api/...`）时接口没走隧道
+- 相对路径会发到 `http://服务器/api/...`，不会带 `/device/{device_id}/`，隧道路由匹配不到。
+- 推荐在前端根据 `window.location.pathname` 动态拼出 `/device/{device_id}` 前缀，例如：
+
+```ts
+function getBasePrefix(): string {
+  if (typeof window === 'undefined') return '';
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  // /device/{device_id}/...
+  if (parts.length >= 2 && parts[0] === 'device') {
+    return `/device/${parts[1]}`;
+  }
+  return '';
+}
+
+export function getApiBase(): string {
+  return `${getBasePrefix()}/api`;
+}
+```
+
+- 然后把前端 API 客户端的 `baseURL` 配置为 `getApiBase()`，例如 `axios.create({ baseURL: getApiBase() })`。
+
