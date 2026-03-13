@@ -1,6 +1,6 @@
 # WS Tunnel
 
-基于 WebSocket 的 **ws-tunnel**：含**隧道中心**（tunnel-server）与**隧道客户端**（tunnel-client）。设备通过客户端出站连到中心，中心对外提供按设备 ID 的 HTTP 反向代理，使用户可通过浏览器访问设备本地的 Web 服务（如配置页、API），而无需与设备在同一局域网。
+基于 WebSocket 的隧道服务：含**隧道中心**（tunnel-server）与**隧道客户端**（tunnel-client）。设备通过客户端出站连到中心，中心对外提供按设备 ID 的 HTTP 反向代理，使用户可通过浏览器访问设备本地的 Web 服务（如配置页、API），而无需与设备在同一局域网。
 
 适用于 4G/NAT 后的嵌入式设备、工控机、边缘网关等需要远程访问其本地 HTTP 服务的场景。
 
@@ -47,8 +47,24 @@
    python3 -m http.server 8080
   ```
 2. **启动隧道中心**（二选一）：
-  - **方式 A：环境变量**（适合少量设备）
-  - **方式 B：配置文件**（推荐多设备；改文件保存即可，新连接按文件 mtime 自动加载，无需重启）
+  - **方式 A：环境变量**（适合少量设备），示例：
+    ```bash
+    LISTEN_ADDR=":8081" \
+    DEVICE_TOKENS="my-device=dev-token" \
+    ./tunnel-server
+    ```
+  - **方式 B：配置文件**（推荐多设备；改文件保存即可，新连接按文件 mtime 自动加载，无需重启），示例：
+    ```bash
+    cat >device_tokens.txt <<'EOF'
+    # device_id=token
+    my-device=dev-token
+    other-device=other-token
+    EOF
+
+    LISTEN_ADDR=":8081" \
+    DEVICE_TOKENS_FILE="device_tokens.txt" \
+    ./tunnel-server
+    ```
 3. **启动隧道客户端**（连接中心并转发到本地 8080）：
   ```bash
    SERVER_WS="ws://127.0.0.1:8081/tunnel/device" \
