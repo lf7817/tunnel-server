@@ -70,6 +70,11 @@ func (c *Client) Run(ctx context.Context) {
 			defer wg.Done()
 			c.readLoop(connCtx, ws, writeChan)
 		}()
+		// ctx 取消时关闭 WebSocket，使阻塞在 ReadMessage 的 readLoop 能退出
+		go func() {
+			<-connCtx.Done()
+			_ = ws.Close()
+		}()
 		wg.Wait()
 		cancel()
 		_ = ws.Close()
